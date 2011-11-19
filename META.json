@@ -41,10 +41,10 @@
    "provides" : {
       "Geo::Coder::Geocoder::US" : {
          "file" : "lib/Geo/Coder/Geocoder/US.pm",
-         "version" : "0.000_01"
+         "version" : "0.001"
       }
    },
-   "release_status" : "testing",
+   "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
          "web" : "https://rt.cpan.org/Public/Dist/Display.html?Name=Geo-Coder-Geocoder-US"
@@ -53,5 +53,5 @@
          "http://dev.perl.org/licenses/"
       ]
    },
-   "version" : "0.000_01"
+   "version" : "0.001"
 }
