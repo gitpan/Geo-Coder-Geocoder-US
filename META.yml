@@ -19,7 +19,7 @@ no_index:
 provides:
   Geo::Coder::Geocoder::US:
     file: lib/Geo/Coder/Geocoder/US.pm
-    version: 0.001
+    version: 0.002
 requires:
   Carp: 0
   LWP::UserAgent: 0
@@ -31,4 +31,4 @@ requires:
 resources:
   bugtracker: https://rt.cpan.org/Public/Dist/Display.html?Name=Geo-Coder-Geocoder-US
   license: http://dev.perl.org/licenses/
-version: 0.001
+version: 0.002
