@@ -8,9 +8,10 @@ use warnings;
 use Carp;
 use LWP::UserAgent;
 use Text::CSV;
-use URI::Escape qw{ uri_escape };
+use URI;
+# use URI::Escape qw{ uri_escape };
 
-our $VERSION = '0.003';
+our $VERSION = '0.004';
 
 {
 
@@ -51,7 +52,13 @@ our $VERSION = '0.003';
 sub debug {
     my ( $self, @args ) = @_;
     if ( @args ) {
-	$self->{debug} = shift @args;
+	my $val = $self->{debug} = shift @args;
+	my $ua = $self->ua();
+	my ( $method, @args ) = $val ?
+	    ( add_handler => \&_dump ) :
+	    ( 'remove_handler' );
+	$ua->$method( request_send => @args );
+	$ua->$method( response_done => @args );
 	return $self;
     } else {
 	return $self->{debug};
@@ -64,29 +71,33 @@ sub debug {
     use constant DELAY => 15;
 
     my $wait_for = time - DELAY;
-    my %valid_arg = map { $_ => 1 } qw{ location };
+##  my %valid_arg = map { $_ => 1 } qw{ location };
 
     sub geocode {
 	my ( $self, @args ) = @_;
 	my %parm = @args % 2 ? ( location => @args ) : @args;
 	defined $parm{location}
 	    or croak "You must provide a location to geocode";
-	$parm{location} = uri_escape( $parm{location} );
+
+	my $uri = URI->new( BASE_URL );
+	$uri->path_segments( service => $self->{interface} );
+	$uri->query_form( address => $parm{location} );
+
+#	$parm{location} = uri_escape( $parm{location} );
 
 	my $now = time;
-	{
-	    $wait_for <= $now and last;
+	while ( $wait_for > $now ) {
 	    sleep $wait_for - $now;
 	    $now = time;
-	    redo;
 	}
 	$wait_for = $now + DELAY;
 
-	my $rslt = $self->{response} = $self->{ua}->get(
-	    BASE_URL. 'service/' . $self->{interface} .
-	    '?address=' .
-	    $parm{location}
-	);
+#	my $rslt = $self->{response} = $self->{ua}->get(
+#	    BASE_URL. 'service/' . $self->{interface} .
+#	    '?address=' .
+#	    $parm{location}
+#	);
+	my $rslt = $self->{response} = $self->{ua}->get( $uri );
 	$rslt->is_success()
 	    or return;
 
@@ -273,6 +284,14 @@ sub ua {
     }
 }
 
+sub _dump {
+    my ( $msg ) = @_;
+    print STDERR "\n", ref $msg, "\n";
+    print STDERR $msg->dump();
+    return;
+}
+
+
 1;
 
 __END__
@@ -310,15 +329,19 @@ This class supports the following public methods:
  my $gc = Geo::Coder::Geocoder::US->new();
 
 This static method instantiates a new C<Geo::Coder::Geocoder::US>
-object. It takes named arguments C<debug>, C<interface>, and C<ua>, each
-of which is handled by calling the same-named method. An attempt to use
-any other named argument will result in an exception.
+object. It takes named arguments C<debug> and C<ua>, each of which is
+handled by calling the same-named method. An attempt to use any other
+named argument will result in an exception.
 
 =head2 debug
 
 This method accesses or modifies the C<debug> attribute of the object.
 This attribute is unsupported in the sense that the author makes no
 commitment about what will happen if it is set to a true value.
+
+At the moment, setting it to a true value causes the C<HTTP::Request>
+and C<HTTP::Response> objects to be dumped to standard error. But the
+author reserves the right to change this without notice.
 
 =head2 geocode
 
@@ -392,7 +415,7 @@ Thomas R. Wyant, III F<wyant at cpan dot org>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011-2012 by Thomas R. Wyant, III
+Copyright (C) 2011-2013 by Thomas R. Wyant, III
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl 5.10.0. For more details, see the full text
